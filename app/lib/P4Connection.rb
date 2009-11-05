@@ -2,7 +2,6 @@ require 'rubygems'
 require 'P4'
 require 'date'
 
-
 class P4Connection
   @@counter_name = 'p4rally_last_sync'
   @@time_format = '%Y/%m/%d:%H:%M:%S'
@@ -15,8 +14,9 @@ class P4Connection
     @p4.user = $OPTIONS[:perforce_username]
     @p4.password = $OPTIONS[:perforce_password]
     @p4.connect
+    @jobspec = nil
   end
-
+  
   def new_changelists_since(time)
     changelists = @p4.run_changes("//...@" + time.strftime(@@time_format) + ",now")
     #we have to query for the full changelist in order to get the jobs
@@ -24,9 +24,13 @@ class P4Connection
   end
 
   def create_job(opts)
+    @jobspec ||= p4.run_jobspec('-o')
     job = @p4.run_job("-o").shift
     opts.each do |key, value|
-      job[key.to_s.capitalize] = value
+      spec_key = key.to_s.split('_').map{|e| e.capitalize}.join
+      if @jobspec.has_key?( spec_key )
+        job[ spec_key ] = value
+      end    
     end
     @p4.save_job(job)
   end
