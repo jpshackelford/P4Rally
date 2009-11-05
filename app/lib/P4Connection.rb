@@ -14,7 +14,7 @@ class P4Connection
     @p4.user = $OPTIONS[:perforce_username]
     @p4.password = $OPTIONS[:perforce_password]
     @p4.connect
-    @jobspec = nil
+    @job_fields = nil
   end
   
   def new_changelists_since(time)
@@ -24,11 +24,19 @@ class P4Connection
   end
 
   def create_job(opts)
-    @jobspec ||= p4.run_jobspec('-o')
+    # get a list of available Job fields unless we've cached them
+    if @job_fields.nil?
+      jobspec = @p4.run_jobspec("-o").shift
+      # second word in the Fields section of the job spec 
+      # contains the field name
+      @job_fields = jobspec['Fields'].map{|f| f.split(' ')[1]}  
+    end
+    # create the job
     job = @p4.run_job("-o").shift
     opts.each do |key, value|
+      # convert ruby symbol to Perforce job field name (typically CamelCase)
       spec_key = key.to_s.split('_').map{|e| e.capitalize}.join
-      if @jobspec.has_key?( spec_key )
+      if @job_fields.include?( spec_key )
         job[ spec_key ] = value
       end    
     end
