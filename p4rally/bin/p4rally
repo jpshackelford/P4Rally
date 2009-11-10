@@ -3,6 +3,7 @@
 require File.expand_path(
     File.join(File.dirname(__FILE__), %w[.. lib p4rally]))
 
+OptionReader.read
 
 rally = RallyConnection.new(:username => $OPTIONS[:rally_username],
                             :password => $OPTIONS[:rally_password],
